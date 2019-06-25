@@ -2,7 +2,7 @@
   "name": "intermediary",
   "version": "1.0.0",
   "description": "",
-  "main": "middleware.js",
+  "main": "intermediary.js",
   "directories": {
     "test": "test"
   },
