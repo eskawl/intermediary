@@ -7,6 +7,19 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Babel node current file",
+            "program": "${file}",
+            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/babel-node"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch current file",
+            "program": "${file}"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Mocha Tests",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "args": [

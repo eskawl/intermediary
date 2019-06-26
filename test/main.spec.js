@@ -1,4 +1,4 @@
-import Intermediary, { createMiddleware } from '../src/intermediary';
+import Intermediary from '../src/intermediary';
 import sinon from 'sinon';
 import chai from 'chai';
 
@@ -34,7 +34,6 @@ describe('Test Suite', () => {
 
 	it('Should export properly', () => {
 		Intermediary.should.not.be.undefined;
-		createMiddleware.should.not.be.undefined;
 	});
 
 	it('Should call middleware', async () => {
@@ -224,6 +223,7 @@ describe('Test Suite', () => {
 		const intermediary = new Intermediary([firstMiddleware, secondMiddleware]);
 
 		let args = [1, 2, 3];
+		// TODO: Pass context here
 		let involved = intermediary.involve(final);
 		await involved(...args);
 
