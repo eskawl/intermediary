@@ -4,6 +4,29 @@ class Intermediary {
         this.afterware = afterware;
     }
 
+    static series(intermediaries, target){
+        return async (...targetArgs) => {
+            let lastIntermediary = intermediaries.pop();
+            let next = lastIntermediary.involve(target).bind(lastIntermediary);
+            intermediaries.reverse();
+            for (const intermediary of intermediaries) {
+                if(!(intermediary instanceof Intermediary)){
+                    throw new Error('intermediaries should be instances of Intermediary')
+                } 
+                next = intermediary.involve(next).bind(intermediary)
+            };
+            return next(...targetArgs)
+        }
+    }
+
+    static createMiddleware(fn){
+        return (ctx) => (next) => (...targetArgs) => fn(ctx, next, ...targetArgs)
+    }
+
+    static createAfterware(fn){
+        return (ctx) => (next) => (result, ...targetArgs) => fn(ctx, next, result, ...targetArgs)
+    }
+
     involve(target, context = {}) {
         return async (...targetArgs) => {
             let finalTargetArgs = [];
@@ -34,9 +57,7 @@ class Intermediary {
     }
 }
 
-export function createMiddleware(fn) {
-    return (ctx) => (next) => fn
-}
+    
 
 export default Intermediary;
 
