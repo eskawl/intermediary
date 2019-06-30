@@ -57,7 +57,7 @@
 /**
  * This callback is the hold the middleware controller logic.
  * This function must return the next function's result invoked with the arguments it got.
- * @type {function}
+ * @type {callback}
  * @typedef CreateMiddlewareCallback
  * @param context The context passed by the involve function. Same as the one the middleware function gets.
  * @param next the next middleware / target function in the stack. Same as the one the middleware executor gets.
@@ -67,7 +67,7 @@
  /**
  * This callback is the hold the afterware controller logic.
  * This function must return the next function's result invoked with the arguments it got.
- * @type {function}
+ * @type {callback}
  * @typedef CreateAfterwareCallback
  * @param context The context passed by the involve function. Same as the one the afterware function gets.
  * @param next the next afterware / target function in the stack. Same as the one the afterware executor gets.
@@ -148,7 +148,7 @@ class Intermediary {
      * These might be different from the one's passed to the involved function as the middleware
      * will be able to modify the arguments.
      * The fn should return next(result, ...targetArgs) when done.
-     * @param {CreateMiddlewareCallback} fn 
+     * @param {CreateAfterwareCallback} fn 
      * @static
      * @returns {Afterware} afterware
      */
