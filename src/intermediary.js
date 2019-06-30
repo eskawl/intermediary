@@ -96,25 +96,27 @@ class Intermediary {
     /**
      * Static function which takes a list of intermediaries and 
      * returns a function which when called executes intermediaries in a sequential manner.
-     * Each intermediary can have stacks of multiple middleware and afterware.
-     * This function sequentially executes middleware stacks of the intermediaries and then 
-     * executes the target function and then executes the afterware stacks of the intermediaries.
      * @param {Intermediary[]} intermediaries 
      * @param {function} target 
      * @static
      * @returns {function} InvolvedFunction Async function which can be invoked to execute all the intermediaries passed
      * along with the target function.
      */
-    static series(intermediaries, target){
+    static series(intermediaries, target, context){
+        /**
+         * Each intermediary can have stacks of multiple middleware and afterware.
+         * This function sequentially executes middleware stacks of the intermediaries and then 
+         * executes the target function and then executes the afterware stacks of the intermediaries.
+         */
         return async (...targetArgs) => {
             let lastIntermediary = intermediaries.pop();
-            let next = lastIntermediary.involve(target).bind(lastIntermediary);
+            let next = lastIntermediary.involve(target, context).bind(lastIntermediary);
             intermediaries.reverse();
             for (const intermediary of intermediaries) {
                 if(!(intermediary instanceof Intermediary)){
                     throw new Error('intermediaries should be instances of Intermediary')
                 } 
-                next = intermediary.involve(next).bind(intermediary)
+                next = intermediary.involve(next, context).bind(intermediary)
             };
             return next(...targetArgs)
         }
@@ -122,12 +124,6 @@ class Intermediary {
 
     /**
      * Create a middleware out of the provided function.
-     * Middlewares should have the following signature
-     * (ctx) => (next) => (...args) => { Middleware-controller-logic }.
-     * Writing functions in this manner could be cumbersome.
-     * Passing a function which takes (ctx, next, ...targetArgs) as arguments 
-     * will be cleaner way to construct middleware.
-     * The fn should return next(...args) when it is done.
      * @param  {CreateMiddlewareCallback} fn 
      * @static
      * @returns {Middleware} middleware
@@ -138,16 +134,6 @@ class Intermediary {
 
     /**
      * Creates a afterware out of the provided function.
-     * Afterware should be in the following signature.
-     * (ctx) => (next) => (result, ...targetArgs) => { Afterware-controller-logic }
-     * Writing functions in this manner could be cumbersome.
-     * Passing a function which takes (ctx, next, result, ...targetArgs) as arguments 
-     * will be cleaner way to construct middleware.
-     * Result will be the return value of the target function on which this intermediary was involved.
-     * Target Args will be actual arguments by which the target function was invoked.
-     * These might be different from the one's passed to the involved function as the middleware
-     * will be able to modify the arguments.
-     * The fn should return next(result, ...targetArgs) when done.
      * @param {CreateAfterwareCallback} fn 
      * @static
      * @returns {Afterware} afterware
@@ -159,10 +145,6 @@ class Intermediary {
     /**
      * Attaches the intermediary's middleware and afterware stack to the 
      * target function and returns and involved function.
-     * The implementation is hugely inspired from redux's middleware implementation.
-     * Calling the involved function will actually trigger the execution of the 
-     * middleware, target, afterware in that order.
-     * The returned function will be an async function.
      * @param {*} target 
      * @param context Optional object which is passed around middleware and afterware
      * during their execution. 

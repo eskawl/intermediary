@@ -8,13 +8,27 @@
   },
   "scripts": {
     "build": "babel src --out-dir lib; webpack",
-    "docs:jsdoc": "mkdir -p docs; jsdoc2md src/**.js > docs/intermediary.md;",
+    "docs:jsdoc": "mkdir -p docs; jsdoc2md src/**.js > docs/api.md;",
     "docs:serve": "docsify serve docs",
     "test": "mocha --require @babel/register"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "middleware",
+    "afterware",
+    "universal",
+    "isomorphic",
+    "async"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eskawl/intermediary.git"
+  },
+  "author": {
+    "name": "Shrutesh Pachineela",
+    "email": "sruteshp@gmail.com"
+  },
+  "homepage": "http://eskawl.github.io/intermediary",
+  "license": "MIT",
   "devDependencies": {
     "@babel/cli": "^7.4.4",
     "@babel/core": "^7.4.5",

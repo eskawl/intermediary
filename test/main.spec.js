@@ -1,4 +1,4 @@
-import Intermediary from '../src/intermediary';
+import Intermediary from '../lib/intermediary';
 import sinon from 'sinon';
 import chai from 'chai';
 
@@ -291,11 +291,11 @@ describe('Test Suite', () => {
 		const final = sinon.spy(async (...finalArgs) => {
 		});
 		const firstMiddlewareAction = sinon.spy();
-		const firstMiddleware = (ctx) => (next) => async (...args) => {
+		const firstMiddleware = Intermediary.createMiddleware(async (ctx, next, ...args) => {
 			firstMiddlewareAction();
 			await delay();
 			return next(...args.map(x => x + 1));
-		};
+		});
 		const intermediary = new Intermediary([firstMiddleware]);
 
 		let args = [1, 2, 3];
@@ -354,6 +354,17 @@ describe('Test Suite', () => {
 		secondAfterwareAction.calledAfter(final).should.be.true;
 		secondAfterwareAction.getCall(0).args[0].should.equal("FINAL_RESULT")
 	})
+
+	// it('should throw when middleware throws and throwOnMiddleware error is true')
+	// it('should not throw when any middleware except first and last throws and throwOnMiddleware error is false')
+	// it('should not throw when first middleware throws and throwOnMiddleware error is false')
+	// it('should not throw when last middleware throws and throwOnMiddleware error is false')
+
+	// it('should throw when afterware throws and throwOnMiddleware error is true')
+	// it('should not throw when any middleware except first and last throws and throwOnMiddleware error is false')
+	// it('should not throw when first middleware throws and throwOnMiddleware error is false')
+	// it('should not throw when last middleware throws and throwOnMiddleware error is false')
+	
 
 	// it('Should call afterware', async t => {
 	// 	const final = sinon.spy();
