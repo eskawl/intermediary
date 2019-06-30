@@ -2,7 +2,10 @@
   "name": "intermediary",
   "version": "1.0.0",
   "description": "",
-  "main": "intermediary.js",
+  "main": "lib/intermediary.js",
+  "files": [
+    "lib/**.*"
+  ],
   "directories": {
     "test": "test"
   },
