@@ -12,7 +12,7 @@ Have hooks and middleware for just about any function.
 ### Why?
 This library was born out of a need to add resolver based middleware
 to graphql. With this, middleware can be composed and applied specifically
-to certain resolvers based on the need (see [graphql example](/examples/graphql).  
+to certain resolvers based on the need (see [graphql example](/examples/graphql)).  
 That being said, this is not
 tied to graphql in any manner and can be used on any function as required.
 
@@ -34,7 +34,7 @@ yarn add intermediary
 UMD Build CDN:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/eskawl/intermediary@master/lib/intermediary.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/intermediary/lib/intermediary.min.js"></script>
 ```
 
 ### Getting Started
@@ -83,7 +83,7 @@ const intermediary = new Intermediary(middleware);
 
 #### Apply the intermediary
 
-Intermediary can be applied on an unsuspecting function using the `involve` method. The intermediary can be involved on as many functions as necessary. 
+Intermediary can be applied on an unsuspecting function using the `involve` method. The intermediary can be reused on as many functions as necessary. 
 
 All these functions will be executed with the configured middleware stack.
 ```js
@@ -96,7 +96,7 @@ const involved = intermediary.involve(targetFunction);
 ```
 
 #### Use the involved function
-The involved function will return a promise (as middleware can also be async) which will be resolved after successful execution of middleware and the targetFunction.
+The `involved` function will return a promise (as middleware can also be async) which will be resolved after successful execution of middleware and the targetFunction.
 
 ```js
 involved(1,2,3)
