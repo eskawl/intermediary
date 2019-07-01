@@ -32,7 +32,7 @@ yarn add intermediary
 UMD Build CDN:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/eskawl/intermediary@master/lib/intermediary.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/intermediary/lib/intermediary.min.js"></script>
 ```
 
 #### Importing
