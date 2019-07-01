@@ -120,7 +120,8 @@ shoutThrice('abcd');
 
 ### Series 
 You can also chain intermediaries using the series method for better composition.
-This way you can mix and match intermediaries to reuse them.
+This way you can mix and match intermediaries to reuse them. See [this example](/examples/chaining)
+for using afterware in a series.
 ```js
 const intermediary1 = new Intermediary([addCount]);
 const intermediary2 = new Intermediary([repeater, shouter]);

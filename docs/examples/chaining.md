@@ -20,6 +20,8 @@ let timeAfterware = [
     })
 ]
 
+let timeIntermediary = new Intermediary(timeMiddleware, timeAfterware);
+
 let argsMiddleware = [
     (ctx) => (next) => (...args) => {
         console.log(`Attempting to process with args: ${args.join(',')}`);
@@ -34,6 +36,8 @@ let argsAfterware = [
     }
 ]
 
+let argsIntermediary = new Intermediary(argsMiddleware, argsAfterware);
+
 let delay = (duration=2000) => {
     return new Promise(resolve => setTimeout(resolve, duration))
 }
@@ -47,8 +51,6 @@ let asyncMiddleware = [
     }
 ]
 
-let timeIntermediary = new Intermediary(timeMiddleware, timeAfterware);
-let argsIntermediary = new Intermediary(argsMiddleware, argsAfterware);
 let asyncIntermediary = new Intermediary(asyncMiddleware);
 
 let final = (...args) => {
@@ -57,10 +59,27 @@ let final = (...args) => {
 }
 
 (async () => {
+    // Wrap argsintermediary over asyncIntermediary which inturn wraps over timeIntermediary.
+    // An alternative for:
+    // argsIntermediary.involve(
+    //     asyncIntermediary.involve(
+    //         timeIntermediary.involve(final)
+    //     )
+    // )(1, 2, 3)
+
     await Intermediary.series([argsIntermediary, asyncIntermediary, timeIntermediary], final, {delay: 5000})(1,2,3)
-    // alternative for argsIntermediary.involve(timeIntermediary.involve(final))(1, 2, 3)
+    
 })()
 
 ```
 
-
+output:
+```
+Attempting to process with args: 1,2,3
+Waiting for async task in middleware...
+Async task done
+Process started at Mon Jul 01 2019 14:00:09 GMT+0530 (India Standard Time)
+Processing.
+Process ended at Mon Jul 01 2019 14:00:09 GMT+0530 (India Standard Time). It took 12 ms.
+Processed with args: 1, 2, 3. Result was awesome!
+```

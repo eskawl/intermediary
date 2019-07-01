@@ -21,10 +21,12 @@ const authorizer = new Intermediary([authorization]);
 export const resolvers = {
     mutation: {
         createProduct: Intermediary.series([authenticator, authorizer]).involve(async (parent, queryArgs, gqlContext) => {
-            /// Create a product
+            // Create a product
+            // Only admin user can create a product now.
         }),
         editProduct: authenticator.involve(async (parent, queryArgs, gqlContext)=>{
-            /// Edit the product
+            // Edit the product
+            // Any logged in user can edit the product.
         }),
     }
 }
