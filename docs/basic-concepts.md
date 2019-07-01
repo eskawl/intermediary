@@ -1,46 +1,95 @@
 An intermediary can have stacks of middleware and afterware.
 
 ```js
-const middleware = [m1, m2, m3];
-const afterware = [a1, a2, a3];
+let m1 = Intermediary.createMiddleware((ctx, next ...args) => {
+    console.log('My first middleware');
+    return next(...args);
+});
+
+let m2 = Intermediary.createMiddleware((ctx, next, ...args) => {
+    console.log('another middleware');
+    return next(...args);
+});
+
+let a1 = Intermediary.createMiddleware((ctx, next ...args) => {
+    console.log('My first afterware');
+    return next(...args);
+});
+
+let a2 = Intermediary.createMiddleware((ctx, next, ...args) => {
+    console.log('another afterware');
+    return next(...args);
+});
+
+const middleware = [m1, m2];
+const afterware = [a1, a2];
 const intermediary = new Intermediary(middleware, afterware);
 ```
-
-For detailed information on how to create a middleware and afterware
-see [Middleware](/middleware) and [Aftwerware](/afterware).
 
 ### Involve function
 
 The intermediary can be involved on any function using the `involve` method.
-A single intermediary can be involved on multiple functions.
-The involve function returns an async function (involved function). 
-Invoking this involved function
-will execute the middleware first in the order 
-they were provided, the target function and then the afterware in the order
-they were provided. The returned function will be an async function.
+The first argument to the involve method is the target function on which 
+this intermediary is to be applied on. The involve function returns an 
+async function (involved function). 
 
 ```js
 const roar = ()=> {
     console.log("ROAR!!")
 }
 
+const involvedRoar = intermediary.involve(roar);
+```
+
+Invoking this involved function
+will execute the middleware first in the order 
+they were provided, the target function next and then the afterware in the order
+they were provided.
+
+```js
+involvedRoar();
+```
+
+output:
+```
+My first middleware
+another middleware
+ROAR!!
+My first afterware
+another afterware
+```
+
+A single intermediary can be involved on multiple functions.
+
+```js
 const purr = () => {
     console.log("purr..")
 }
 
-const involvedRoar = intermediary.involve(roar);
 const involvedPurr = intermediary.involve(purr);
 
-involvedRoar();
 involvedPurr();
-
 ```
+
+output:
+```
+My first middleware
+another middleware
+purr..
+My first afterware
+another afterware
+```
+
+For detailed information on how to create a middleware and afterware
+see [Middleware](/middleware) and [Aftwerware](/afterware).
 
 ### Context
 
 You can also provide some context to the intermediary while you are
-involving it. This context will be passed across the middleware and afterware stacks.
+involving it by passing it as a second argument to the `involve` function. 
+This context will be passed across the middleware and afterware stacks.
 If no context is provided an empty object will be passed.
+
 ```js
 const say = (msg) => {
     console.log(msg);
@@ -52,21 +101,21 @@ const addCount = Intermediary.createMiddleware((ctx, next, msg) => {
 });
 
 const repeater = Intermediary.createMiddleware((ctx, next, msg) => {
-    let msg = (`${msg}! `).repeat(ctx.repeatCount);
+    msg = (`${msg}! `).repeat(ctx.repeatCount);
     return next(msg);
-})
+});
 
 const shouter = Intermediary.createMiddleware((ctx, next, msg)=>{
-    let msg = msg.toUpperCase();
+    msg = msg.toUpperCase();
     return next(msg);
-})
+});
 
 const intermediary = new Intermediary([addCount, repeater, shouter]);
 
-const shoutThrice =  intermediary.involve(say, {repeatCount: 3});
+const shoutThrice =  intermediary.involve(say, {repeatCount: 2});
 
 shoutThrice('abcd');
-// ABCD! ABCD! ABCD! ABCD! 
+// ABCD! ABCD! ABCD!
 ```
 
 ### Series 
@@ -100,6 +149,5 @@ const p = new Person('John');
 
 const intermediary = new Intermediary([repeater, shouter]);
 intermediary.involve(p.say.bind(p), {repeatCount: 3})('abcd');
-// John says: // ABCD! ABCD! ABCD!
-
+// John says: ABCD! ABCD! ABCD!
 ```

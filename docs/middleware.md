@@ -16,11 +16,20 @@ const m1 = (context) => (next) => (...targetArgs) => {
 
 const middleware = [m1];
 ```
+
+### Structure
+Middleware functions have a reference to 
+* the current context - this can be supplied to the involve function.
+* the next middleware in the stack
+* the arguments for the next middleware in the stack
+
+The middleware functions must always return the result of `next(...targetArgs)`. 
+
 You can also use the static helper function `createMiddleware` to create a middleware
 function. Writing functions in the above manner could be cumbersome.
-Passing a function which takes (ctx, next, ...targetArgs) as arguments 
+Passing a callback function which takes `(ctx, next, ...targetArgs)` as arguments 
 will be cleaner way to construct middleware.
-The fn should return next(...args) when it is done.
+This callback function should return `next(...targetArgs)` when it is done.
 
 ```js
 const m1 = Intermediary.createMiddleware((context, next, ...targetArgs) => {
@@ -58,13 +67,6 @@ Final function executed with 1, 2, 3
 If you are intending to write a middleware that can be applied anywhere,
 spread syntax `...targetArgs` is something you may want.
 
-### Structure
-Middleware function have a reference to 
-* the current context - this can be supplied to the involve function.
-* the next middleware in the stack
-* the arguments for the next middleware in the stack
-
-The middleware functions must always return the result of `next(...targetArgs)`. 
 
 ### Stacking
 Multiple middleware can be stacked together. 
@@ -86,7 +88,7 @@ middleware = [m1, m2];
 
 const intermediary = new Intermediary(middleware);
 const final = (a, b, c) => {
-    console.log(`Final function executed with ${a}, ${b}, ${c}`)
+    console.log(`Final function executed with ${a}, ${b}, ${c}`);
 }
 
 intermediary.involve(final)(1, 2, 3);
@@ -104,6 +106,7 @@ A context can be supplied while involving the intermediary.
 If no context is provided an empty object will be passed by default.
 The context can be mutated by the middleware to maintain any values that
 are necessary for the other middleware / afterware in the stack.
+See [Context](/basic-concepts#Context)
 
 ### Async
 The middleware functions can also be async. The next middleware in the stack
@@ -134,5 +137,12 @@ const involved = intermediary.involve(final);
 (async () => {
     await involved(1, 2, 3);
 })
+```
+
+output:
+```
+Waiting for async task
+Executing first middleware
+Executing target function with 1, 2, 3
 ```
 

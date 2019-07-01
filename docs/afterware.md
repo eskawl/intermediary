@@ -16,13 +16,19 @@ const a1 = (context) => (next) => (targetResult, ...targetArgs) => {
 const afterware = [a1];
 ```
 
-Writing functions in this manner could be cumbersome.
-You can also use the static helper function `createAfterware` to create a middleware
-function. Result will be the return value of the target function on which this intermediary was involved.
-Target Args will be actual arguments by which the target function was invoked.
-These might be different from the one's passed to the involved function as the middleware
+### Structure
+Afterware function have a reference to 
+* the current context - this can be supplied to the involve function.
+* the `next` afterware in the stack.
+* the `result` of the target function.
+* `targetArgs` will be actual arguments by which the target function was invoked. These might be different from the one's passed to the involved function as the middleware
 will be able to modify the arguments.
-The fn should return next(result, ...targetArgs) when done.  
+
+The afterware functions must always return the result of `next(result ...targetArgs)` when done. 
+
+Writing functions in this manner could be cumbersome.
+You can also use the static helper function `createAfterware` to create an afterware
+function.
 
 ```js
 const a1 = Intermediary.createAfterware((context, next, targetResult, ...targetArgs) => {
@@ -45,13 +51,6 @@ const a1 = Intermediary.createAfterware((context, next, result, a, b, c) => {
 If you are intending to write a middleware that can be applied anywhere,
 spread syntax `...targetArgs` is something you may want.
 
-### Structure
-Afterware function have a reference to 
-* the current context - this can be supplied to the involve function.
-* the next afterware in the stack
-* the arguments for the next afterware in the stack
-
-The afterware functions must always return the result of `next(...targetArgs)`. 
 
 ### Stacking
 Multiple afterware can be stacked together. 
@@ -59,13 +58,13 @@ They are executed in the order supplied to the intermediary. To provide multiple
 append them to the middleware array.
 
 ```js
-const a1 = Intermediary.createMiddleware((context, next, result, ...targetArgs) => {
+const a1 = Intermediary.createAfterware((context, next, result, ...targetArgs) => {
     console.log('My first afterware.')
     console.log(`Result was ${result}`);
     return next(...targetArgs)
 };
 
-const a2 = Intermediary.createMiddleware((context, next, result, ...targetArgs) => {
+const a2 = Intermediary.createAfterware((context, next, result, ...targetArgs) => {
     console.log('My second afterware.')
     return next(...targetArgs)
 };
@@ -97,6 +96,7 @@ are necessary for the other middleware / afterware in the stack.
 
 This context is the same as supplied to the middleware and will have all the
 changes made by the middleware executed prior to this afterware.
+See [Context](/basic-concepts#Context)
 
 ### Async
-Afterware can also be async. See middleware docs for more info.
+Afterware can also be async. See [middleware docs](/middleware#Async) for more info.
