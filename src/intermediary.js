@@ -109,7 +109,7 @@ class Intermediary {
          * executes the target function and then executes the afterware stacks of the intermediaries.
          */
         return async (...targetArgs) => {
-            let lastIntermediary = intermediaries.pop();
+            let lastIntermediary = [...intermediaries].pop();
             let next = lastIntermediary.involve(target, context).bind(lastIntermediary);
             intermediaries.reverse();
             for (const intermediary of intermediaries) {
