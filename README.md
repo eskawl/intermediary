@@ -1,11 +1,11 @@
-[![npm version](https://img.shields.io/npm/v/intermediary.svg?logo=npm&style=popout)](https://www.npmjs.org/package/intermediary)
-[![build status](https://img.shields.io/travis/eskawl/intermediary.svg?logo=travis&style=popout)](https://travis-ci.org/eskawl/intermediary)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/intermediary.svg?logo=webpack&style=popout-square)](https://bundlephobia.com/result?p=intermediary@1.0.0)
-
-
 ## Intermediary
 
 Have hooks and middleware for just about any function.
+
+
+[![npm version](https://img.shields.io/npm/v/intermediary.svg?logo=npm&style=popout)](https://www.npmjs.org/package/intermediary)
+[![build status](https://img.shields.io/travis/eskawl/intermediary.svg?logo=travis&style=popout)](https://travis-ci.org/eskawl/intermediary)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/intermediary.svg?logo=webpack&style=popout-square)](https://bundlephobia.com/result?p=intermediary@1.0.0)
 
 ### Features
 - Execute middleware before your function executes
