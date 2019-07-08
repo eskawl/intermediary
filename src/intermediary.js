@@ -158,7 +158,7 @@ class Intermediary {
                 return target(...targetArgs);
             };
             if(this.middleware){
-                let middleware = this.middleware.reverse();
+                let middleware = ([...this.middleware]).reverse();
                 for (const currentMiddleware of middleware) {
                     next = await currentMiddleware(context)(next)
                 }
@@ -166,7 +166,7 @@ class Intermediary {
             let result = await next(...targetArgs);
 
             if(this.afterware){
-                let afterware = this.afterware.reverse();
+                let afterware = ([...this.afterware]).reverse();
                 next = (result) => result;
                 for (const currentAfterware of afterware) {
                     next = await currentAfterware(context)(next)
