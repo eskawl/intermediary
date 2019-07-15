@@ -1,17 +1,21 @@
 const {default: Intermediary} =  require('../lib/intermediary');
 
 let middleware = [
-    (ctx) => (next) => (...args) => {
+    (ctx) => (...args) => {
         console.log(`Attempting to process with args: ${args.join(',')}`);
-        return next(...args)
+        return args
+    },
+    (ctx) => (...args) => {
+        console.log(`Attempting to 2nd process with args: ${args.join(',')}`);
+        return args
     }
 ]
 
 
 let afterware = [
-    (ctx) => (next) => (result, ...args) => {
+    (ctx) => (result, ...args) => {
         console.log(`Processed with args: ${args.join(', ')}. Result was ${result}`);
-        return next(result, ...args)
+        return { result, args }
     }
 ]
 

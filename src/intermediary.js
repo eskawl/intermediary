@@ -129,7 +129,7 @@ class Intermediary {
      * @returns {Middleware} middleware
      */
     static createMiddleware(fn){
-        return (ctx) => (next) => (...targetArgs) => fn(ctx, next, ...targetArgs)
+        return (ctx) => (...targetArgs) => fn(ctx, ...targetArgs)
     }
 
     /**
@@ -139,7 +139,7 @@ class Intermediary {
      * @returns {Afterware} afterware
      */
     static createAfterware(fn){
-        return (ctx) => (next) => (result, ...targetArgs) => fn(ctx, next, result, ...targetArgs)
+        return (ctx) => (result, ...targetArgs) => fn(ctx, result, ...targetArgs)
     }
 
     /**
@@ -150,28 +150,39 @@ class Intermediary {
      * during their execution. 
      * @returns {function} Involved function 
      */
-    involve(target, context = {}) {
+    involve(target, context = {}, throwOnMiddleware) {
         return async (...targetArgs) => {
-            let finalTargetArgs = [];
-            let next = (...targetArgs) => {
-                finalTargetArgs = targetArgs;
-                return target(...targetArgs);
-            };
+            let updatedArg = [...targetArgs]
             if(this.middleware){
-                let middleware = ([...this.middleware]).reverse();
+                let middleware = ([...this.middleware]);
                 for (const currentMiddleware of middleware) {
-                    next = await currentMiddleware(context)(next)
+                    try {
+                        updatedArg = await currentMiddleware(context)(...updatedArg)
+                    } catch (error) {
+                        console.log(error)
+                        if (!throwOnMiddleware) {
+                            return
+                        }
+                    }
                 }
             }
-            let result = await next(...targetArgs);
+            let result = await target(...updatedArg);
 
             if(this.afterware){
-                let afterware = ([...this.afterware]).reverse();
-                next = (result) => result;
+                let afterware = ([...this.afterware]);
                 for (const currentAfterware of afterware) {
-                    next = await currentAfterware(context)(next)
+                    try {
+                        const currentResult = await currentAfterware(context)(result, ...updatedArg)
+                        result = currentResult.result
+                        updatedArg = currentResult.args
+                    } catch (error) {
+                        console.log(error)
+                        if (!throwOnMiddleware) {
+                            return
+                        }
+                    }
                 }
-                return next(result, ...finalTargetArgs);
+                return result
             } else {
                 return result;
             }

@@ -5,11 +5,11 @@ let delay = (duration=2000) => {
 }
 
 let middleware = [
-    (ctx) => (next) => async (...args) => {
+    (ctx) => async (...args) => {
         console.log(`Waiting for async task in middleware...`);
         await delay(ctx.delay);
         console.log(`Async task done`);
-        return next(...args);
+        return args;
     }
 ]
 

@@ -6,13 +6,13 @@ let middleware = [
     //     console.log(`Process started at ${ctx.startTime}`);
     //     return next(...args)
     // }
-    Intermediary.createMiddleware((ctx, next, ...args) => {
+    Intermediary.createMiddleware((ctx, ...args) => {
         ctx.startTime = new Date();
-        return next(...args);
+        return args
     }),
-    Intermediary.createMiddleware((ctx, next, ...args) => {
+    Intermediary.createMiddleware((ctx, ...args) => {
         console.log(`Process started at ${ctx.startTime}`);
-        return next(...args);
+        return args
     }),
 ]
 
@@ -24,10 +24,10 @@ let afterware = [
     //     return next(...args)
     // }
 
-    Intermediary.createAfterware((ctx, next, result, ...args) => {
+    Intermediary.createAfterware((ctx, result, ...args) => {
         ctx.endTime = new Date();
         console.log(`Process ended at ${ctx.endTime}. It took ${ctx.endTime - ctx.startTime} ms.`);
-        return next(...args)
+        return args
     })
 ]
 
