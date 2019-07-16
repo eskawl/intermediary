@@ -4,19 +4,19 @@ const say = (msg) => {
     console.log(msg);
 }
 
-const addCount = Intermediary.createMiddleware((ctx, next, msg) => {
+const addCount = Intermediary.createMiddleware((ctx, msg) => {
     ctx.repeatCount = ctx.repeatCount + 1;
-    return next(msg);
+    return msg;
 });
 
-const repeater = Intermediary.createMiddleware((ctx, next, msg) => {
+const repeater = Intermediary.createMiddleware((ctx, msg) => {
     let repeatedMsg = (`${msg}!`).repeat(ctx.repeatCount);
-    return next(repeatedMsg);
+    return repeatedMsg;
 })
 
-const shouter = Intermediary.createMiddleware((ctx, next, msg)=>{
+const shouter = Intermediary.createMiddleware((ctx, msg)=>{
     let upper = msg.toUpperCase();
-    return next(upper);
+    return upper;
 })
 
 const intermediary1 = new Intermediary([addCount]);
