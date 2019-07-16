@@ -50,6 +50,6 @@ import Intermediary from 'intermediary';
 ```
 Browser:
 
-If using the CDN, Intermediary is available at `window.Intermeidary`.
+If using the CDN, Intermediary is available at `window.Intermediary`.
 
 ### Usage: see http://eskawl.github.io/intermediary
