@@ -1,3 +1,5 @@
+const convertArgType = require('../utils/convertArgType')
+
 // region TYPEDEFS
 /**
  * A middleware function.
@@ -110,14 +112,16 @@ class Intermediary {
          */
         return async (...targetArgs) => {
             let lastIntermediary = [...intermediaries].pop();
-            let next = lastIntermediary.involve(target, context).bind(lastIntermediary);
-            intermediaries.reverse();
+            let next
+            const fakeTarget = () => {}
             for (const intermediary of intermediaries) {
                 if(!(intermediary instanceof Intermediary)){
                     throw new Error('intermediaries should be instances of Intermediary')
-                } 
-                next = intermediary.involve(next, context).bind(intermediary)
+                }
+                next = intermediary.involve(fakeTarget, context).bind(intermediary)
+                next(...targetArgs)
             };
+            next = lastIntermediary.involve(target, context).bind(lastIntermediary)
             return next(...targetArgs)
         }
     }
@@ -158,6 +162,7 @@ class Intermediary {
                 for (const currentMiddleware of middleware) {
                     try {
                         updatedArg = await currentMiddleware(context)(...updatedArg)
+                        updatedArg = convertArgType(updatedArg)
                     } catch (error) {
                         console.log(error)
                         if (!throwOnMiddleware) {
@@ -174,7 +179,7 @@ class Intermediary {
                     try {
                         const currentResult = await currentAfterware(context)(result, ...updatedArg)
                         result = currentResult.result
-                        updatedArg = currentResult.args
+                        updatedArg = convertArgType(currentResult.args)
                     } catch (error) {
                         console.log(error)
                         if (!throwOnMiddleware) {
