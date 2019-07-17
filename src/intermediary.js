@@ -113,16 +113,16 @@ class Intermediary {
         return async (...targetArgs) => {
             let lastIntermediary = [...intermediaries].pop();
             let next
-            const fakeTarget = () => {}
+            const fakeTarget = (result) => result
             for (const intermediary of intermediaries) {
                 if(!(intermediary instanceof Intermediary)){
                     throw new Error('intermediaries should be instances of Intermediary')
                 }
                 next = intermediary.involve(fakeTarget, context).bind(intermediary)
-                next(...targetArgs)
+                await next(...targetArgs)
             };
             next = lastIntermediary.involve(target, context).bind(lastIntermediary)
-            return next(...targetArgs)
+            return await next(...targetArgs)
         }
     }
 
@@ -187,11 +187,8 @@ class Intermediary {
                         }
                     }
                 }
-                return result
-            } else {
-                return result;
             }
-
+            return result;
         }
     }
 }
