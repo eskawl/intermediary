@@ -8,9 +8,9 @@ function setup() {
 	const final = sinon.spy((...finalArgs) => {
 	});
 	const firstMiddlewareAction = sinon.spy();
-	const firstMiddleware = (ctx) => (next) => (...args) => {
+	const firstMiddleware = (ctx) => (...args) => {
 		firstMiddlewareAction();
-		return next(...args);
+		return args;
 	};
 	const intermediary = new Intermediary([firstMiddleware]);
 
@@ -51,14 +51,14 @@ describe('Test Suite', () => {
 		});
 		const firstAfterwareAction = sinon.spy();
 		const secondAfterwareAction = sinon.spy();
-		const firstAfterware = (ctx) => (next) => async (...args) => {
+		const firstAfterware = (ctx) => async (result, ...args) => {
 			firstAfterwareAction();
 			await delay();
-			return next(...args);
+			return { result, args }
 		};
-		const secondAfterware = (ctx) => (next) => (...args) => {
+		const secondAfterware = (ctx) => (result, ...args) => {
 			secondAfterwareAction();
-			return next(...args);
+			return { result, args }
 		};
 		const intermediary = new Intermediary(null, [firstAfterware, secondAfterware]);
 
@@ -114,9 +114,9 @@ describe('Test Suite', () => {
 		const final = sinon.spy((...finalArgs) => {
 		});
 		const firstAfterwareAction = sinon.spy();
-		const firstAfterware = (ctx) => (next) => (...args) => {
+		const firstAfterware = (ctx) => (result, ...args) => {
 			firstAfterwareAction();
-			return next(...args);
+			return { result, args }
 		};
 		const intermediary = new Intermediary(null, [firstAfterware]);
 
@@ -148,10 +148,10 @@ describe('Test Suite', () => {
 		const final = sinon.spy((...finalArgs) => {
 		});
 		const firstMiddlewareAction = sinon.spy();
-		const firstMiddleware = (ctx) => (next) => async (...args) => {
+		const firstMiddleware = (ctx) => async (...args) => {
 			firstMiddlewareAction();
 			await delay();
-			return next(...args);
+			return args
 		};
 		const intermediary = new Intermediary([firstMiddleware]);
 
@@ -169,10 +169,10 @@ describe('Test Suite', () => {
 		const final = sinon.spy((...finalArgs) => {
 		});
 		const firstAfterwareAction = sinon.spy();
-		const firstAfterware = (ctx) => (next) => async (...args) => {
+		const firstAfterware = (ctx) => async (result, ...args) => {
 			firstAfterwareAction();
 			await delay();
-			return next(...args);
+			return { result, args };
 		};
 		const intermediary = new Intermediary(null, [firstAfterware]);
 
@@ -189,10 +189,10 @@ describe('Test Suite', () => {
 		const final = sinon.spy(async (...finalArgs) => {
 		});
 		const firstAfterwareAction = sinon.spy();
-		const firstAfterware = (ctx) => (next) => async (...args) => {
+		const firstAfterware = (ctx) => async (result, ...args) => {
 			firstAfterwareAction();
 			await delay();
-			return next(...args);
+			return { result, args };
 		};
 		const intermediary = new Intermediary(null, [firstAfterware]);
 
@@ -210,15 +210,15 @@ describe('Test Suite', () => {
 		});
 		const firstMiddlewareAction = sinon.spy();
 		const secondMiddlewareAction = sinon.spy();
-		const firstMiddleware = (ctx) => (next) => async (...args) => {
+		const firstMiddleware = (ctx) => async (...args) => {
 			firstMiddlewareAction();
 			ctx.one = 1;
 			await delay();
-			return next(...args);
+			return args;
 		};
-		const secondMiddleware = (ctx) => (next) => (...args) => {
+		const secondMiddleware = (ctx) => (...args) => {
 			secondMiddlewareAction(ctx);
-			return next(...args);
+			return args;
 		};
 		const intermediary = new Intermediary([firstMiddleware, secondMiddleware]);
 
@@ -242,28 +242,28 @@ describe('Test Suite', () => {
 		});
 		const firstMiddlewareAction = sinon.spy();
 		const secondMiddlewareAction = sinon.spy();
-		const firstMiddleware = (ctx) => (next) => async (...args) => {
+		const firstMiddleware = (ctx) => async (...args) => {
 			firstMiddlewareAction();
 			ctx.one = 1;
 			await delay();
-			return next(...args);
+			return args;
 		};
-		const secondMiddleware = (ctx) => (next) => (...args) => {
+		const secondMiddleware = (ctx) => (...args) => {
 			secondMiddlewareAction({...ctx});
-			return next(...args);
+			return args;
 		};
 
 		const firstAfterwareAction = sinon.spy();
 		const secondAfterwareAction = sinon.spy();
-		const firstAfterware = (ctx) => (next) => async (...args) => {
+		const firstAfterware = (ctx) => async (result, ...args) => {
 			firstAfterwareAction({...ctx});
 			ctx.two = 2;
 			await delay();
-			return next(...args);
+			return { result, args };
 		};
-		const secondAfterware = (ctx) => (next) => (...args) => {
+		const secondAfterware = (ctx) => (result, ...args) => {
 			secondAfterwareAction({...ctx});
-			return next(...args);
+			return { result, args };
 		};
 		const intermediary = new Intermediary([firstMiddleware, secondMiddleware], [firstAfterware, secondAfterware]);
 
@@ -291,10 +291,10 @@ describe('Test Suite', () => {
 		const final = sinon.spy(async (...finalArgs) => {
 		});
 		const firstMiddlewareAction = sinon.spy();
-		const firstMiddleware = Intermediary.createMiddleware(async (ctx, next, ...args) => {
+		const firstMiddleware = Intermediary.createMiddleware(async (ctx, ...args) => {
 			firstMiddlewareAction();
 			await delay();
-			return next(...args.map(x => x + 1));
+			return [...args.map(x => x + 1)];
 		});
 		const intermediary = new Intermediary([firstMiddleware]);
 
@@ -313,26 +313,26 @@ describe('Test Suite', () => {
 		});
 		const firstMiddlewareAction = sinon.spy();
 		const secondMiddlewareAction = sinon.spy();
-		const firstMiddleware = (ctx) => (next) => async (...args) => {
+		const firstMiddleware = (ctx) => async (...args) => {
 			firstMiddlewareAction();
 			await delay();
-			return next(...args);
+			return args;
 		};
-		const secondMiddleware = (ctx) => (next) => (...args) => {
+		const secondMiddleware = (ctx) => (...args) => {
 			secondMiddlewareAction();
-			return next(...args);
+			return args;
 		};
 
 		const firstAfterwareAction = sinon.spy();
 		const secondAfterwareAction = sinon.spy();
-		const firstAfterware = (ctx) => (next) => async (...args) => {
-			firstAfterwareAction(args[0]);
+		const firstAfterware = (ctx) => async (result, ...args) => {
+			firstAfterwareAction(result, ...args);
 			await delay();
-			return next(...args);
+			return { result, args };
 		};
-		const secondAfterware = (ctx) => (next) => (...args) => {
-			secondAfterwareAction(args[0]);
-			return next(...args);
+		const secondAfterware = (ctx) => (result, ...args) => {
+			secondAfterwareAction(result, ...args);
+			return { result, args };
 		};
 		const intermediary = new Intermediary([firstMiddleware, secondMiddleware], [firstAfterware, secondAfterware]);
 
@@ -350,9 +350,11 @@ describe('Test Suite', () => {
 		firstAfterwareAction.calledAfter(secondMiddlewareAction).should.be.true;
 		firstAfterwareAction.calledAfter(final).should.be.true;
 		firstAfterwareAction.getCall(0).args[0].should.equal("FINAL_RESULT")
+		firstAfterwareAction.getCall(0).args[1].should.equal(1)
 		secondAfterwareAction.calledAfter(firstAfterwareAction).should.be.true;
 		secondAfterwareAction.calledAfter(final).should.be.true;
 		secondAfterwareAction.getCall(0).args[0].should.equal("FINAL_RESULT")
+		secondAfterwareAction.getCall(0).args[1].should.equal(1)
 	})
 
 	// it('should throw when middleware throws and throwOnMiddleware error is true')
