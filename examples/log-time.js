@@ -27,7 +27,7 @@ let afterware = [
     Intermediary.createAfterware((ctx, result, ...args) => {
         ctx.endTime = new Date();
         console.log(`Process ended at ${ctx.endTime}. It took ${ctx.endTime - ctx.startTime} ms.`);
-        return args
+        return { result, args }
     })
 ]
 
