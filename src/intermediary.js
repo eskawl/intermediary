@@ -1,4 +1,5 @@
 const convertArgType = require('../utils/convertArgType')
+const logger = require('../utils/logger')
 
 // region TYPEDEFS
 /**
@@ -104,7 +105,7 @@ class Intermediary {
      * @returns {function} InvolvedFunction Async function which can be invoked to execute all the intermediaries passed
      * along with the target function.
      */
-    static series(intermediaries, target, context){
+    static series(intermediaries, target, context, providedConfig){
         /**
          * Each intermediary can have stacks of multiple middleware and afterware.
          * This function sequentially executes middleware stacks of the intermediaries and then 
@@ -118,10 +119,10 @@ class Intermediary {
                 if(!(intermediary instanceof Intermediary)){
                     throw new Error('intermediaries should be instances of Intermediary')
                 }
-                next = intermediary.involve(fakeTarget, context).bind(intermediary)
+                next = intermediary.involve(fakeTarget, context, providedConfig).bind(intermediary)
                 await next(...targetArgs)
             };
-            next = lastIntermediary.involve(target, context).bind(lastIntermediary)
+            next = lastIntermediary.involve(target, context, providedConfig).bind(lastIntermediary)
             return await next(...targetArgs)
         }
     }
@@ -154,9 +155,19 @@ class Intermediary {
      * during their execution. 
      * @returns {function} Involved function 
      */
-    involve(target, context = {}, throwOnMiddleware) {
+    involve(target, context = {}, providedConfig) {
+        const defaultConfig = {
+            throwOnTarget: true,
+            throwOnAfterware: true,
+            throwOnMiddleware: true,
+        }
+        const config = {
+            ...defaultConfig,
+            ...providedConfig
+        }
         return async (...targetArgs) => {
             let updatedArg = [...targetArgs]
+            let result = ''
             if(this.middleware){
                 let middleware = ([...this.middleware]);
                 for (const currentMiddleware of middleware) {
@@ -164,14 +175,20 @@ class Intermediary {
                         updatedArg = await currentMiddleware(context)(...updatedArg)
                         updatedArg = convertArgType(updatedArg)
                     } catch (error) {
-                        console.log(error)
-                        if (!throwOnMiddleware) {
+                        logger(error)
+                        if (config.throwOnMiddleware) {
                             return
                         }
                     }
                 }
             }
-            let result = await target(...updatedArg);
+            try {
+                result = await target(...updatedArg);
+            } catch (error) {
+                if (config.throwOnTarget) {
+                    return
+                }
+            }
 
             if(this.afterware){
                 let afterware = ([...this.afterware]);
@@ -181,8 +198,8 @@ class Intermediary {
                         result = currentResult.result
                         updatedArg = convertArgType(currentResult.args)
                     } catch (error) {
-                        console.log(error)
-                        if (!throwOnMiddleware) {
+                        logger(error)
+                        if (config.throwOnAfterware) {
                             return
                         }
                     }

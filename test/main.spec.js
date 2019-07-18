@@ -1,7 +1,8 @@
-import Intermediary from '../lib/intermediary';
+import Intermediary from '../src/intermediary';
 import sinon from 'sinon';
 import chai from 'chai';
 
+process.env.NODE_ENV = 'test'
 var should = chai.should();
 
 function setup() {
@@ -249,20 +250,20 @@ describe('Test Suite', () => {
 			return args;
 		};
 		const secondMiddleware = (ctx) => (...args) => {
-			secondMiddlewareAction({...ctx});
+			secondMiddlewareAction({ ...ctx });
 			return args;
 		};
 
 		const firstAfterwareAction = sinon.spy();
 		const secondAfterwareAction = sinon.spy();
 		const firstAfterware = (ctx) => async (result, ...args) => {
-			firstAfterwareAction({...ctx});
+			firstAfterwareAction({ ...ctx });
 			ctx.two = 2;
 			await delay();
 			return { result, args };
 		};
 		const secondAfterware = (ctx) => (result, ...args) => {
-			secondAfterwareAction({...ctx});
+			secondAfterwareAction({ ...ctx });
 			return { result, args };
 		};
 		const intermediary = new Intermediary([firstMiddleware, secondMiddleware], [firstAfterware, secondAfterware]);
@@ -357,7 +358,498 @@ describe('Test Suite', () => {
 		secondAfterwareAction.getCall(0).args[1].should.equal(1)
 	})
 
-	// it('should throw when middleware throws and throwOnMiddleware error is true')
+	it('should ignore when first middleware throws error and throwOnMiddleware error is false', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstMiddlewareAction();
+			throw new Error('Some error occurred')
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			secondMiddlewareAction(args);
+			return args
+		};
+		const intermediary = new Intermediary([firstMiddleware, secondMiddleware]);
+
+		let args = [1, 2, 3];
+		let involved = intermediary.involve(final, {}, { throwOnMiddleware: false });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		final.getCall(0).args.should.deep.equal(args);
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		final.calledAfter(secondMiddlewareAction).should.be.true;
+	})
+
+	it('should ignore when second middleware throws error and throwOnMiddleware error is false and context is retained', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const thirdMiddlewareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstMiddlewareAction();
+			return args
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			secondMiddlewareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const thirdMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			thirdMiddlewareAction(args);
+			return args
+		};
+		const intermediary = new Intermediary([firstMiddleware, secondMiddleware, thirdMiddleware]);
+
+		let args = [1, 2, 3];
+		let expectedArgs = args.map(x => x + 2)
+		let involved = intermediary.involve(final, {}, { throwOnMiddleware: false });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		final.getCall(0).args.should.deep.equal(expectedArgs);
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.calledAfter(secondMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+	})
+
+	it('should ignore when last middleware throws error and throwOnMiddleware error is false and context is retained', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const thirdMiddlewareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstMiddlewareAction();
+			return args
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			secondMiddlewareAction(args);
+			return args
+		};
+		const thirdMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			thirdMiddlewareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const intermediary = new Intermediary([firstMiddleware, secondMiddleware, thirdMiddleware]);
+
+		let args = [1, 2, 3];
+		let expectedArgs = args.map(x => x + 2)
+		let involved = intermediary.involve(final, {}, { throwOnMiddleware: false });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		final.getCall(0).args.should.deep.equal(expectedArgs);
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.calledAfter(secondMiddlewareAction).should.be.true;
+		secondMiddlewareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+	})
+
+	it('should ignore when all the middleware throws error and throwOnMiddleware error is false', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const thirdMiddlewareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstMiddlewareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			secondMiddlewareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const thirdMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			thirdMiddlewareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const intermediary = new Intermediary([firstMiddleware, secondMiddleware, thirdMiddleware]);
+
+		let args = [1, 2, 3];
+		let expectedArgs = [2, 3, 4]
+		let involved = intermediary.involve(final, {}, { throwOnMiddleware: false });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.calledAfter(secondMiddlewareAction).should.be.true;
+		firstMiddlewareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+		secondMiddlewareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+		thirdMiddlewareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+		final.getCall(0).args.should.deep.equal(args)
+	})
+
+	it('should halt when first middleware throws error and throwOnMiddleware error is true', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstMiddlewareAction();
+			throw new Error('Some error occurred')
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			secondMiddlewareAction(args);
+			return args
+		};
+		const intermediary = new Intermediary([firstMiddleware, secondMiddleware]);
+
+		let args = [1, 2, 3];
+		let involved = intermediary.involve(final, {}, { throwOnMiddleware: true });
+		await involved(...args);
+
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledOnce.should.be.false;
+		final.calledOnce.should.be.false;
+	})
+
+	it('should halt when second middleware throws error and throwOnMiddleware error is true', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const thirdMiddlewareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstMiddlewareAction();
+			return args
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			secondMiddlewareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const thirdMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			thirdMiddlewareAction(args);
+			return args
+		};
+		const intermediary = new Intermediary([firstMiddleware, secondMiddleware, thirdMiddleware]);
+
+		let args = [1, 2, 3];
+		let expectedArgs = args.map(x => x + 2)
+		let involved = intermediary.involve(final, {}, { throwOnMiddleware: true });
+		await involved(...args);
+
+		final.calledOnce.should.be.false;
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		secondMiddlewareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+	})
+
+	it('should halt when last middleware throws error and throwOnMiddleware error is true', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const thirdMiddlewareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstMiddlewareAction();
+			return args
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			secondMiddlewareAction(args);
+			return args
+		};
+		const thirdMiddleware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			thirdMiddlewareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const intermediary = new Intermediary([firstMiddleware, secondMiddleware, thirdMiddleware]);
+
+		let args = [1, 2, 3];
+		let expectedArgs = args.map(x => x + 3)
+		let involved = intermediary.involve(final, {}, { throwOnMiddleware: true });
+		await involved(...args);
+
+		final.calledOnce.should.be.false;
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.calledAfter(secondMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+	})
+
+	it('should ignore when first afterware throws error and throwOnAfterware error is false', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstAfterwareAction = sinon.spy();
+		const secondAfterwareAction = sinon.spy();
+		const firstAfterware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstAfterwareAction();
+			throw new Error('Some error occurred')
+		};
+		const secondAfterware = (ctx) => (result, ...args) => {
+			secondAfterwareAction(args);
+			return { result, args }
+		};
+		const intermediary = new Intermediary(null, [firstAfterware, secondAfterware]);
+
+		let args = [1, 2, 3];
+		let involved = intermediary.involve(final, {}, { throwOnAfterware: false });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		final.getCall(0).args.should.deep.equal(args);
+		firstAfterwareAction.calledOnce.should.be.true;
+		secondAfterwareAction.calledAfter(firstAfterwareAction).should.be.true;
+		final.calledBefore(secondAfterwareAction).should.be.true;
+	})
+
+	it('should ignore when second afterware throws error and throwOnAfterware error is true and context is retained', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstAfterwareAction = sinon.spy();
+		const secondAfterwareAction = sinon.spy();
+		const thirdAfterwareAction = sinon.spy();
+		const firstAfterware = (ctx) => (result, ...args) => {
+			args = args.map((x) => x + 1)
+			firstAfterwareAction();
+			return { result, args }
+		};
+		const secondAfterware = (ctx) => (result, ...args) => {
+			args = args.map((x) => x + 1)
+			secondAfterwareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const thirdAfterware = (ctx) => (result, ...args) => {
+			args = args.map((x) => x + 1)
+			thirdAfterwareAction(args);
+			return { result, args }
+		};
+		const intermediary = new Intermediary(null, [firstAfterware, secondAfterware, thirdAfterware]);
+
+		let args = [1, 2, 3];
+		let expectedArgs = args.map(x => x + 2)
+		let involved = intermediary.involve(final, {}, { throwOnAfterware: false });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		final.getCall(0).args.should.deep.equal(args);
+		firstAfterwareAction.calledOnce.should.be.true;
+		secondAfterwareAction.calledAfter(firstAfterwareAction).should.be.true;
+		thirdAfterwareAction.calledAfter(secondAfterwareAction).should.be.true;
+		thirdAfterwareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+	})
+
+	it('should halt when first afterware throws error and throwOnAfterware error is false', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstAfterwareAction = sinon.spy();
+		const secondAfterwareAction = sinon.spy();
+		const firstAfterware = (ctx) => (...args) => {
+			args = args.map((x) => x + 1)
+			firstAfterwareAction();
+			throw new Error('Some error occurred')
+		};
+		const secondAfterware = (ctx) => (result, ...args) => {
+			secondAfterwareAction(args);
+			return { result, args }
+		};
+		const intermediary = new Intermediary(null, [firstAfterware, secondAfterware]);
+
+		let args = [1, 2, 3];
+		let involved = intermediary.involve(final, {}, false);
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		firstAfterwareAction.calledOnce.should.be.true;
+		secondAfterwareAction.calledOnce.should.be.false;
+		firstAfterwareAction.calledAfter(final).should.be.true;
+	})
+
+	it('should halt when second afterware throws error and throwOnAfterware error is true', async () => {
+		const final = sinon.spy((...finalArgs) => {
+		});
+		const firstAfterwareAction = sinon.spy();
+		const secondAfterwareAction = sinon.spy();
+		const thirdAfterwareAction = sinon.spy();
+		const firstAfterware = (ctx) => (result, ...args) => {
+			args = args.map((x) => x + 1)
+			firstAfterwareAction();
+			return { result, args }
+		};
+		const secondAfterware = (ctx) => (result, ...args) => {
+			args = args.map((x) => x + 1)
+			secondAfterwareAction(args);
+			throw new Error('Some error occurred')
+		};
+		const thirdAfterware = (ctx) => (result, ...args) => {
+			args = args.map((x) => x + 1)
+			thirdAfterwareAction(args);
+			return { result, args }
+		};
+		const intermediary = new Intermediary(null, [firstAfterware, secondAfterware, thirdAfterware]);
+
+		let args = [1, 2, 3];
+		let expectedArgs = args.map(x => x + 2)
+		let involved = intermediary.involve(final, {}, { throwOnAfterware: true });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		final.getCall(0).args.should.deep.equal(args);
+		firstAfterwareAction.calledOnce.should.be.true;
+		secondAfterwareAction.calledAfter(firstAfterwareAction).should.be.true;
+		thirdAfterwareAction.calledOnce.should.be.false;
+		secondAfterwareAction.getCall(0).args[0].should.deep.equal(expectedArgs)
+	})
+
+	it('should ignore when target fn throws error and throwOnTarget error is false and the context is retained', async () => {
+		const incrementArgs = (...args) => args.map(x => x + 1)
+
+		const final = sinon.spy((...finalArgs) => {
+			finalArgs = incrementArgs(...finalArgs)
+			throw new Error('Some error occurred')
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const thirdMiddlewareAction = sinon.spy();
+		const firstAfterwareAction = sinon.spy();
+		const secondAfterwareAction = sinon.spy();
+		const thirdAfterwareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = incrementArgs(...args)
+			firstMiddlewareAction(args);
+			return args
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			args = incrementArgs(...args)
+			secondMiddlewareAction(args);
+			return args
+		};
+		const thirdMiddleware = (ctx) => (...args) => {
+			args = incrementArgs(...args)
+			thirdMiddlewareAction(args);
+			return args
+		};
+
+		const firstAfterware = (ctx) => (result, ...args) => {
+			args = incrementArgs(...args)
+			firstAfterwareAction(args);
+			return { result, args }
+		};
+		const secondAfterware = (ctx) => (result, ...args) => {
+			args = incrementArgs(...args)
+			secondAfterwareAction(args);
+			return { result, args }
+		};
+		const thirdAfterware = (ctx) => (result, ...args) => {
+			args = incrementArgs(...args)
+			thirdAfterwareAction(args);
+			return { result, args }
+		};
+		const intermediary = new Intermediary(
+			[firstMiddleware, secondMiddleware, thirdMiddleware], [firstAfterware, secondAfterware, thirdAfterware]
+		);
+
+		let args = [1, 2, 3];
+		let involved = intermediary.involve(final, {}, { throwOnTarget: false });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.calledAfter(secondMiddlewareAction).should.be.true;
+		final.calledAfter(thirdMiddlewareAction).should.be.true;
+		firstAfterwareAction.calledAfter(final).should.be.true;
+		secondAfterwareAction.calledAfter(firstAfterwareAction).should.be.true;
+		thirdAfterwareAction.calledAfter(secondAfterwareAction).should.be.true;
+		firstMiddlewareAction.getCall(0).args[0].should.deep.equal([2, 3, 4]);
+		secondMiddlewareAction.getCall(0).args[0].should.deep.equal([3, 4, 5]);
+		thirdMiddlewareAction.getCall(0).args[0].should.deep.equal([4, 5, 6]);
+		final.getCall(0).args.should.deep.equal([4, 5, 6]);
+		firstAfterwareAction.getCall(0).args[0].should.deep.equal([5, 6, 7]);
+		secondAfterwareAction.getCall(0).args[0].should.deep.equal([6, 7, 8]);
+		thirdAfterwareAction.getCall(0).args[0].should.deep.equal([7, 8, 9]);
+	})
+
+	it('should halt when target fn throws error and throwOnTarget error is true', async () => {
+		const incrementArgs = (...args) => args.map(x => x + 1)
+
+		const final = sinon.spy((...finalArgs) => {
+			finalArgs = incrementArgs(...finalArgs)
+			throw new Error('Some error occurred')
+		});
+		const firstMiddlewareAction = sinon.spy();
+		const secondMiddlewareAction = sinon.spy();
+		const thirdMiddlewareAction = sinon.spy();
+		const firstAfterwareAction = sinon.spy();
+		const secondAfterwareAction = sinon.spy();
+		const thirdAfterwareAction = sinon.spy();
+		const firstMiddleware = (ctx) => (...args) => {
+			args = incrementArgs(...args)
+			firstMiddlewareAction(args);
+			return args
+		};
+		const secondMiddleware = (ctx) => (...args) => {
+			args = incrementArgs(...args)
+			secondMiddlewareAction(args);
+			return args
+		};
+		const thirdMiddleware = (ctx) => (...args) => {
+			args = incrementArgs(...args)
+			thirdMiddlewareAction(args);
+			return args
+		};
+
+		const firstAfterware = (ctx) => (result, ...args) => {
+			args = incrementArgs(...args)
+			firstAfterwareAction(args);
+			return { result, args }
+		};
+		const secondAfterware = (ctx) => (result, ...args) => {
+			args = incrementArgs(...args)
+			secondAfterwareAction(args);
+			return { result, args }
+		};
+		const thirdAfterware = (ctx) => (result, ...args) => {
+			args = incrementArgs(...args)
+			thirdAfterwareAction(args);
+			return { result, args }
+		};
+		const intermediary = new Intermediary(
+			[firstMiddleware, secondMiddleware, thirdMiddleware], [firstAfterware, secondAfterware, thirdAfterware]
+		);
+
+		let args = [1, 2, 3];
+		let involved = intermediary.involve(final, {}, { throwOnTarget: true });
+		await involved(...args);
+
+		final.calledOnce.should.be.true;
+		firstMiddlewareAction.calledOnce.should.be.true;
+		secondMiddlewareAction.calledAfter(firstMiddlewareAction).should.be.true;
+		thirdMiddlewareAction.calledAfter(secondMiddlewareAction).should.be.true;
+		final.calledAfter(thirdMiddlewareAction).should.be.true;
+		firstAfterwareAction.calledOnce.should.be.false;
+		secondAfterwareAction.calledOnce.should.be.false;
+		thirdAfterwareAction.calledOnce.should.be.false;
+		firstMiddlewareAction.getCall(0).args[0].should.deep.equal([2, 3, 4]);
+		secondMiddlewareAction.getCall(0).args[0].should.deep.equal([3, 4, 5]);
+		thirdMiddlewareAction.getCall(0).args[0].should.deep.equal([4, 5, 6]);
+		final.getCall(0).args.should.deep.equal([4, 5, 6]);
+	})
+
+
 	// it('should not throw when any middleware except first and last throws and throwOnMiddleware error is false')
 	// it('should not throw when first middleware throws and throwOnMiddleware error is false')
 	// it('should not throw when last middleware throws and throwOnMiddleware error is false')
@@ -366,7 +858,7 @@ describe('Test Suite', () => {
 	// it('should not throw when any middleware except first and last throws and throwOnMiddleware error is false')
 	// it('should not throw when first middleware throws and throwOnMiddleware error is false')
 	// it('should not throw when last middleware throws and throwOnMiddleware error is false')
-	
+
 
 	// it('Should call afterware', async t => {
 	// 	const final = sinon.spy();
