@@ -65,4 +65,4 @@ If using the CDN, Intermediary is available at `window.Intermediary`.
 
 * Afterware callback takes `result` from previous afterware/target as first argument and remaining arguments with it
 
-* Extra argument as config can be sent to `involve` or `series`. It includes the flag for `throwOnMiddleware, throwOnTarget, throwOnAfterware`
+* Extra argument as config can be sent to `involve` or `series`. It includes the flag for `throwOnMiddleware, throwOnTarget, throwOnAfterware` that help in execution of the middleware/afterware/target even if there is any error that occurs in any of them, according the flags provided
