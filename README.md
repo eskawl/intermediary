@@ -56,7 +56,7 @@ If using the CDN, Intermediary is available at `window.Intermediary`.
 
 
 ### Migrating from 1.x to 2.x
-s
+
 * Middleware and Afterware executor is removed. Therefore, no use of a executor function that takes a `next` argument and return the `next(args)`
 
 * In middleware, instead of returning `next(args)`, return `[...args]` in an array form
