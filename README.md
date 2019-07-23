@@ -53,3 +53,16 @@ Browser:
 If using the CDN, Intermediary is available at `window.Intermediary`.
 
 ### Usage: see http://eskawl.github.io/intermediary
+
+
+### Migrating from 1.x to 2.x
+
+* Middleware and Afterware executor is removed. Therefore, no use of a executor function that takes a `next` argument and return the `next(args)`
+
+* In middleware, instead of returning `next(args)`, return `[...args]` in an array form
+
+* In afterware, instead of returning `next(args)`, return `{result: <result to be used by next afterware>, args: <arguments to be used by next afterware>}`
+
+* Afterware callback takes `result` from previous afterware/target as first argument and remaining arguments with it
+
+* Extra argument as config can be sent to `involve` or `series`. It includes the flag for `throwOnMiddleware, throwOnTarget, throwOnAfterware` that help in execution of the middleware/afterware/target even if there is any error that occurs in any of them, according the flags provided

@@ -15,36 +15,36 @@ An intermediary which uses both middleware and afterware
 		
 		
 		let middleware = [
-			(ctx) => (next) => async (a, b, c) => {
+			(ctx) => async (a, b, c) => {
 				ctx.first = 1;
 				console.log("Waiting for async task")
 				await delay();
 				console.log(`Executing first middleware`);
 				console.log(ctx);
-				return next(a, b, c + 1)
+				return [a, b, c + 1]
 			},
-			(ctx) => (next) => (a, b, c) => {
+			(ctx) => (a, b, c) => {
 				ctx.second = 2;
 				console.log(`Executing second middleware`);
 				console.log(ctx);
-				return next(a, b, c)
+				return [a, b, c]
 			}
 		]
 		
 		let afterware = [
-			(ctx) => (next) => (result, ...targetArgs) => {
+			(ctx) => (result, ...targetArgs) => {
 				console.log(`Executing first afterware`);
 				console.log(`Context was `);
 				console.log(ctx);
 				console.log(`Result was ${result}`);
 				console.log(`Target arguments were ${targetArgs}`);
-				return next(result, ...targetArgs);
+				return { result, args: [...targetArgs] };
 			},
-			(ctx) => (next) => async (result, ...targetArgs) => {
+			(ctx) => async (result, ...targetArgs) => {
 				console.log(`Awaiting async task in afterware`);
 				await delay();
 				console.log(`Executing second afterware`);
-				return next(result, ...targetArgs);
+				return { result, args: [...targetArgs] };
 			},
 		]
 	

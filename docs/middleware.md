@@ -9,9 +9,9 @@ Middleware functions have the following function signature.
 This is heavily inspired from the redux middleware.
 
 ```js
-const m1 = (context) => (next) => (...targetArgs) => {
+const m1 = (context) => (...targetArgs) => {
     console.log('My first middleware.')
-    return next(...targetArgs)
+    return targetArgs
 };
 
 const middleware = [m1];
@@ -20,21 +20,20 @@ const middleware = [m1];
 ### Structure
 Middleware functions have a reference to 
 * the current context - this can be supplied to the involve function.
-* the next middleware in the stack
 * the arguments for the next middleware in the stack
 
-The middleware functions must always return the result of `next(...targetArgs)`. 
+The middleware functions must always return the result of `[...targetArgs]`. 
 
 You can also use the static helper function `createMiddleware` to create a middleware
 function. Writing functions in the above manner could be cumbersome.
-Passing a callback function which takes `(ctx, next, ...targetArgs)` as arguments 
+Passing a callback function which takes `(ctx, ...targetArgs)` as arguments 
 will be cleaner way to construct middleware.
-This callback function should return `next(...targetArgs)` when it is done.
+This callback function should return array of arguments for the next middleware `[...targetArgs]` when it is done.
 
 ```js
-const m1 = Intermediary.createMiddleware((context, next, ...targetArgs) => {
+const m1 = Intermediary.createMiddleware((context, ...targetArgs) => {
     console.log('My first middleware.');
-    return next(...targetArgs);
+    return targetArgs;
 })
 
 const middleware = [m1]
@@ -45,7 +44,7 @@ The target args can also be expanded ahead of time, if you know what they would 
 ```js
 const m1 = Intermediary.createMiddleware((context, next, a, b, c) => {
     console.log('My first middleware.');
-    return next(a, b, c);
+    return [a, b, c];
 })
 
 const middleware = [m1];
@@ -74,14 +73,14 @@ They are executed in the order supplied to the intermediary. To provide multiple
 append them to the middleware array.
 
 ```js
-const m1 = Intermediary.createMiddleware((context, next, ...targetArgs) => {
+const m1 = Intermediary.createMiddleware((context, ...targetArgs) => {
     console.log('My first middleware.')
-    return next(...targetArgs)
+    return targetArgs
 };
 
-const m2 = Intermediary.createMiddleware((context, next, ...targetArgs) => {
+const m2 = Intermediary.createMiddleware((context, ...targetArgs) => {
     console.log('My second middleware.')
-    return next(...targetArgs)
+    return targetArgs
 };
 
 middleware = [m1, m2];
@@ -125,10 +124,11 @@ function delay(delay = 2000) {
     })
 }
 
-const m1 = Intermediary.createMiddleware(async (context, next, a, b, c) => {
+const m1 = Intermediary.createMiddleware(async (context, a, b, c) => {
     console.log("Waiting for async task")
     await delay();
     console.log(`Executing first middleware`);
+    return [a, b, c]
 })
 
 const intermediary = new Intermediary([m1]);
