@@ -8,9 +8,9 @@ time it is involved on a target function.
 Afterware functions have the following function signature. 
 
 ```js
-const a1 = (context) => (next) => (targetResult, ...targetArgs) => {
+const a1 = (context) => (targetResult, ...targetArgs) => {
     console.log('My first afterware.')
-    return next(targetResult, ...targetArgs)
+    return { result: targetResult, ...targetArgs }
 };
 
 const afterware = [a1];
@@ -19,21 +19,20 @@ const afterware = [a1];
 ### Structure
 Afterware function have a reference to 
 * the current context - this can be supplied to the involve function.
-* the `next` afterware in the stack.
 * the `result` of the target function.
 * `targetArgs` will be actual arguments by which the target function was invoked. These might be different from the one's passed to the involved function as the middleware
 will be able to modify the arguments.
 
-The afterware functions must always return the result of `next(result ...targetArgs)` when done. 
+The afterware functions must always return the result of `{ result, args: [...targetArgs] }` when done. 
 
 Writing functions in this manner could be cumbersome.
 You can also use the static helper function `createAfterware` to create an afterware
 function.
 
 ```js
-const a1 = Intermediary.createAfterware((context, next, targetResult, ...targetArgs) => {
+const a1 = Intermediary.createAfterware((context, targetResult, ...targetArgs) => {
     console.log('My first afterware.');
-    return next(...targetArgs);
+    return { result: targetResult, args: [...targetArgs] };
 })
 
 const afterware = [a1]
@@ -42,9 +41,9 @@ const afterware = [a1]
 The target args can also be expanded ahead of time, if you know what they would be.
 
 ```js
-const a1 = Intermediary.createAfterware((context, next, result, a, b, c) => {
+const a1 = Intermediary.createAfterware((context, result, a, b, c) => {
     console.log('My first afterware.');
-    return next(a, b, c);
+    return { result, args: [a, b, c] }
 })
 ```
 
@@ -58,15 +57,15 @@ They are executed in the order supplied to the intermediary. To provide multiple
 append them to the middleware array.
 
 ```js
-const a1 = Intermediary.createAfterware((context, next, result, ...targetArgs) => {
+const a1 = Intermediary.createAfterware((context, result, ...targetArgs) => {
     console.log('My first afterware.')
     console.log(`Result was ${result}`);
-    return next(...targetArgs)
+    return { result, args: [...targetArgs] }
 };
 
-const a2 = Intermediary.createAfterware((context, next, result, ...targetArgs) => {
+const a2 = Intermediary.createAfterware((context, result, ...targetArgs) => {
     console.log('My second afterware.')
-    return next(...targetArgs)
+    return { result, args: [...targetArgs] }
 };
 
 const afterware = [a1, a2];

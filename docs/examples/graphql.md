@@ -2,19 +2,19 @@ Protect your graphql resolvers by adding authentication and authorization
 
 
 ```js
-const authentication = Intermediary.createMiddleware((ctx, next, parent, queryArgs, gqlContext) => {
+const authentication = Intermediary.createMiddleware((ctx, parent, queryArgs, gqlContext) => {
     if(!gqlContext.user) {
         throw new Error('NOT_ALLOWED')
     }
-    return next(parent, queryArgs, gqlContext);
+    return [parent, queryArgs, gqlContext];
 })
 
-const authorization = Intermediary.createMiddleware(async (ctx, next, parent, queryArgs, gqlContext) => {
+const authorization = Intermediary.createMiddleware(async (ctx, parent, queryArgs, gqlContext) => {
     let isAdmin = await gqlContext.user.isAdmin();
     if(!isAdmin) {
         throw new Error('NOT_ALLOWED')
     }
-    return next(parent, queryArgs, gqlContext);
+    return [parent, queryArgs, gqlContext];
 })
 const authenticator = new Intermediary([authentication]);
 const authorizer = new Intermediary([authorization]);
