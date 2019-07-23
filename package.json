@@ -1,6 +1,6 @@
 {
   "name": "intermediary",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "",
   "main": "lib/intermediary.js",
   "files": [
@@ -30,6 +30,12 @@
     "name": "Shrutesh Pachineela",
     "email": "sruteshp@gmail.com"
   },
+  "contributors": [
+    {
+      "name": "Keshav Bohra",
+      "email": "keshav2016@gmail.com"
+    }
+  ],
   "homepage": "http://eskawl.github.io/intermediary",
   "license": "MIT",
   "devDependencies": {
