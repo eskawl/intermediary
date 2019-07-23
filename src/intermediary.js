@@ -1,10 +1,13 @@
+const convertArgType = require('../utils/convertArgType')
+const logger = require('../utils/logger')
+
 // region TYPEDEFS
 /**
  * A middleware function.
  * @typedef Middleware
  * @type {function}
  * @param {object} Context The context passed by the involve function
- * @returns {MiddlewareExecutor}
+ * @returns {MiddlewareController}
  */
 
 /**
@@ -12,30 +15,14 @@
  * @typedef Afterware
  * @type {function}
  * @param {object} Context The context passed by the involve function
- * @returns {AfterwareExecutor}
+ * @returns {AfterwareController}
  */
-
-/**
-  * A middleware executor
-  * @typedef MiddlewareExecutor
-  * @type {function}
-  * @param {function } next the next middleware / target function in the stack.
-  * @returns { MiddlewareController } The middleware controller.
-  */
-
-/**
-  * An afterware executor
-  * @typedef AfterwareExecutor
-  * @type {function}
-  * @param {function} next the next afterware / target function in the stack.
-  * @returns { MiddlewareController } The afterware controller.
-  */
 
 /**
   * Middleware Controller
   * This holds the acutal body of the middleware function.
   * This function must return the next function's result.
-  * It can be obtained by invoking next function passed on to it by the executor with the arguments this controller got.
+  * It can be obtained by returning the arguments this controller got, in an array.
   * @typedef MiddlewareController
   * @type {function}
   * @param {...args}
@@ -46,7 +33,7 @@
   * Afterware Controller
   * This holds the acutal body of the middleware function.
   * This function must return the next function's result.
-  * It can be obtained by invoking next function passed on to it by the executor with the arguments this controller got.
+  * It can be obtained by returning the arguments this controller got, in an array.
   * @typedef AfterwareController
   * @type {function}
   * @param result the return value of the target function
@@ -60,7 +47,6 @@
  * @type {callback}
  * @typedef CreateMiddlewareCallback
  * @param context The context passed by the involve function. Same as the one the middleware function gets.
- * @param next the next middleware / target function in the stack. Same as the one the middleware executor gets.
  * @param {...args} arg The args which were passed to this middleware.
  */
 
@@ -70,7 +56,6 @@
  * @type {callback}
  * @typedef CreateAfterwareCallback
  * @param context The context passed by the involve function. Same as the one the afterware function gets.
- * @param next the next afterware / target function in the stack. Same as the one the afterware executor gets.
  * @param {...args} arg The args which were passed to this afterware.
  */
 
@@ -97,28 +82,41 @@ class Intermediary {
      * Static function which takes a list of intermediaries and 
      * returns a function which when called executes intermediaries in a sequential manner.
      * @param {Intermediary[]} intermediaries 
-     * @param {function} target 
+     * @param {function} target
+     * @param context Optional object which is passed around middleware and afterware
+     * during their execution.
+     * @param providedConfig Optional object which can be passed to ignore the errors that 
+     * occurs during the execution of middleware, target function and afterware
      * @static
      * @returns {function} InvolvedFunction Async function which can be invoked to execute all the intermediaries passed
      * along with the target function.
      */
-    static series(intermediaries, target, context){
+    static series(intermediaries, target, context, providedConfig){
         /**
          * Each intermediary can have stacks of multiple middleware and afterware.
          * This function sequentially executes middleware stacks of the intermediaries and then 
          * executes the target function and then executes the afterware stacks of the intermediaries.
          */
         return async (...targetArgs) => {
-            let lastIntermediary = [...intermediaries].pop();
-            let next = lastIntermediary.involve(target, context).bind(lastIntermediary);
-            intermediaries.reverse();
+            let afterwareStacks = []
+            let middlewareStacks = []
             for (const intermediary of intermediaries) {
                 if(!(intermediary instanceof Intermediary)){
                     throw new Error('intermediaries should be instances of Intermediary')
-                } 
-                next = intermediary.involve(next, context).bind(intermediary)
+                }
+                if (intermediary.middleware) {
+                    middlewareStacks.push(...intermediary.middleware)
+                }
+                if (intermediary.afterware) {
+                    afterwareStacks = [
+                        ...intermediary.afterware,
+                        ...afterwareStacks
+                    ]
+                }
             };
-            return next(...targetArgs)
+            const newIntermediary = new Intermediary(middlewareStacks, afterwareStacks)
+            const next = newIntermediary.involve(target, context, providedConfig)
+            return await next(...targetArgs)
         }
     }
 
@@ -129,7 +127,7 @@ class Intermediary {
      * @returns {Middleware} middleware
      */
     static createMiddleware(fn){
-        return (ctx) => (next) => (...targetArgs) => fn(ctx, next, ...targetArgs)
+        return (ctx) => (...targetArgs) => fn(ctx, ...targetArgs)
     }
 
     /**
@@ -139,7 +137,7 @@ class Intermediary {
      * @returns {Afterware} afterware
      */
     static createAfterware(fn){
-        return (ctx) => (next) => (result, ...targetArgs) => fn(ctx, next, result, ...targetArgs)
+        return (ctx) => (result, ...targetArgs) => fn(ctx, result, ...targetArgs)
     }
 
     /**
@@ -148,34 +146,73 @@ class Intermediary {
      * @param {*} target 
      * @param context Optional object which is passed around middleware and afterware
      * during their execution. 
+     * @param providedConfig Optional object which can be passed to ignore the errors that 
+     * occurs during the execution of middleware, target function and afterware
      * @returns {function} Involved function 
      */
-    involve(target, context = {}) {
+    involve(target, context = {}, providedConfig) {
+        const defaultConfig = {
+            throwOnTarget: true,
+            throwOnAfterware: true,
+            throwOnMiddleware: true,
+        }
+        const config = {
+            ...defaultConfig,
+            ...providedConfig
+        }
         return async (...targetArgs) => {
-            let finalTargetArgs = [];
-            let next = (...targetArgs) => {
-                finalTargetArgs = targetArgs;
-                return target(...targetArgs);
-            };
+            let updatedArg = [...targetArgs]
+            let previousArg = [...targetArgs]
+            let result = ''
+            let previousResult = ''
             if(this.middleware){
-                let middleware = ([...this.middleware]).reverse();
+                let middleware = ([...this.middleware]);
                 for (const currentMiddleware of middleware) {
-                    next = await currentMiddleware(context)(next)
+                    try {
+                        updatedArg = await currentMiddleware(context)(...updatedArg)
+                        updatedArg = !!updatedArg ? convertArgType(updatedArg) : previousArg
+                        previousArg = updatedArg
+                    } catch (error) {
+                        logger(error)
+                        if (config.throwOnMiddleware) {
+                            return
+                        }
+                    }
                 }
             }
-            let result = await next(...targetArgs);
+            try {
+                result = await target(...updatedArg);
+            } catch (error) {
+                logger(error)
+                if (config.throwOnTarget) {
+                    return
+                }
+            }
 
             if(this.afterware){
-                let afterware = ([...this.afterware]).reverse();
-                next = (result) => result;
+                let afterware = ([...this.afterware]);
                 for (const currentAfterware of afterware) {
-                    next = await currentAfterware(context)(next)
-                }
-                return next(result, ...finalTargetArgs);
-            } else {
-                return result;
-            }
+                    try {
+                        result = !!result ? result : previousResult
+                        previousResult = result
+                        const currentResult = await currentAfterware(context)(result, ...updatedArg)
 
+                        result = !!currentResult && !!currentResult.result
+                            ? currentResult.result : previousResult
+                        
+                        updatedArg = !!currentResult && !!currentResult.args
+                            ? convertArgType(currentResult.args) : previousArg
+                        
+                        previousArg = updatedArg
+                    } catch (error) {
+                        logger(error)
+                        if (config.throwOnAfterware) {
+                            return
+                        }
+                    }
+                }
+            }
+            return result;
         }
     }
 }
