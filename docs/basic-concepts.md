@@ -1,24 +1,24 @@
 An intermediary can have stacks of middleware and afterware.
 
 ```js
-let m1 = Intermediary.createMiddleware((ctx, next ...args) => {
+let m1 = Intermediary.createMiddleware((ctx, ...args) => {
     console.log('My first middleware');
-    return next(...args);
+    return args
 });
 
-let m2 = Intermediary.createMiddleware((ctx, next, ...args) => {
+let m2 = Intermediary.createMiddleware((ctx,  ...args) => {
     console.log('another middleware');
-    return next(...args);
+    return args
 });
 
-let a1 = Intermediary.createMiddleware((ctx, next ...args) => {
+let a1 = Intermediary.createAfterware((ctx, result, ...args) => {
     console.log('My first afterware');
-    return next(...args);
+    return { result, args }
 });
 
-let a2 = Intermediary.createMiddleware((ctx, next, ...args) => {
+let a2 = Intermediary.createAfterware((ctx, result, ...args) => {
     console.log('another afterware');
-    return next(...args);
+    return { result, args }
 });
 
 const middleware = [m1, m2];
@@ -95,19 +95,19 @@ const say = (msg) => {
     console.log(msg);
 }
 
-const addCount = Intermediary.createMiddleware((ctx, next, msg) => {
+const addCount = Intermediary.createMiddleware((ctx, msg) => {
     ctx.repeatCount = ctx.repeatCount + 1;
-    return next(msg);
+    return msg;
 });
 
-const repeater = Intermediary.createMiddleware((ctx, next, msg) => {
+const repeater = Intermediary.createMiddleware((ctx, msg) => {
     msg = (`${msg}! `).repeat(ctx.repeatCount);
-    return next(msg);
+    return msg;
 });
 
-const shouter = Intermediary.createMiddleware((ctx, next, msg)=>{
+const shouter = Intermediary.createMiddleware((ctx, msg)=>{
     msg = msg.toUpperCase();
-    return next(msg);
+    return msg;
 });
 
 const intermediary = new Intermediary([addCount, repeater, shouter]);
@@ -151,4 +151,110 @@ const p = new Person('John');
 const intermediary = new Intermediary([repeater, shouter]);
 intermediary.involve(p.say.bind(p), {repeatCount: 3})('abcd');
 // John says: ABCD! ABCD! ABCD!
+```
+
+### Config
+
+You can also provide configuration object to the involve or series.
+It is the third argument in involve and fourth argument in series.
+
+ Name | Data type | Default value | Description
+------------- | ------------- | ------------- | ---------
+throwOnMiddleware | Boolean | true | if false, it won't halt on any error that occurs in middleware and retains the previous arguments to the next middleware's arguments. Otherwise, the execution stops when any error occurs in middleware
+throwOnTarget | Boolean | true | if false, it won't halt on any error that occurs in target function and retains the last middleware's argument to the next afterware's argument. Otherwise, the execution stops when any error occurs in target function
+throwOnAfterware | Boolean | true | if false, it won't halt on any error that occurs in afterware and retains the previous arguments to the next afterware's arguments. Otherwise, the execution stops when any error occurs in afterware
+
+
+```js
+let m1 = Intermediary.createMiddleware((ctx, ...args) => {
+    console.log('M1');
+    return args
+});
+
+let m2 = Intermediary.createMiddleware((ctx,  ...args) => {
+    console.log('M2');
+    throw new Error('Some error occurred in middleware M2')
+});
+
+let m3 = Intermediary.createMiddleware((ctx, ...args) => {
+    console.log('M3');
+    /* Arguments retain here from the previous middleware */
+    return args
+});
+
+let say = () => {
+    throw new Error('some error occurred in target function')
+}
+
+let a1 = Intermediary.createAfterware((ctx, result, ...args) => {
+    console.log('A1');
+    return { result, args }
+});
+
+let a2 = Intermediary.createAfterware((ctx, result, ...args) => {
+    console.log('A2');
+    throw new Error('Some error occurred in afterware A2')
+});
+
+let a3 = Intermediary.createAfterware((ctx, result, ...args) => {
+    console.log('A3');
+    /* Arguments retain here from the previous afterware */
+    return { result, args }
+});
+
+/* Example 1 */
+const intermediary = new Intermediary([m1, m2, m3], [a1, a2, a3]);
+const involved = intermediary.involve(say, {}, {
+    throwOnMiddleware: false,
+    throwOnTarget: false,
+    throwOnAfterware: false,
+})
+involved(1, 2, 3)
+```
+
+output
+
+```
+M1
+M2
+Error: Some error occurred in middleware M2
+M3
+Error: some error occurred in target function
+A1
+A2
+Error: Some error occurred in afterware A2
+A3
+```
+
+```js
+
+/* Example 2 */
+const intermediary1 = new Intermediary([m1, m2], [a1, a2]);
+const intermediary2 = new Intermediary([m2, m3], [a2, a3]);
+
+const series = Intermediary.series([intermediary1, intermediary2], say, {}, {
+    throwOnMiddleware: false,
+    throwOnTarget: false,
+    throwOnAfterware: false,
+})
+series(1, 2, 3)
+
+```
+
+output
+
+```
+M1
+M2
+Error: Some error occurred in middleware M2
+A1
+A2
+Error: Some error occurred in afterware A2
+M2
+Error: Some error occurred in middleware M2
+M3
+Error: some error occurred in target function
+A2
+Error: Some error occurred in afterware A2
+A3
 ```

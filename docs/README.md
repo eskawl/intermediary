@@ -60,12 +60,12 @@ If using the CDN, Intermediary is available at `window.Intermeidary`.
 
 Intermediary allows to specify a list of middleware to be executed before a function.
 Middleware can be created using `Intermediary.createMiddleware` static function.
-The callback must return `next(...args)`. 
+The callback must return `[...args]`. 
 
 ```js
-const startTime = Intermediary.createMiddleware((ctx, next, ...args)=>{
+const startTime = Intermediary.createMiddleware((ctx, ...args)=>{
 	console.log(`Started at ${new Date()}`);
-	return next(...args);
+	return args;
 });
 
 const middleware = [
