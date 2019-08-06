@@ -102,14 +102,15 @@ class Intermediary {
      * @returns {function} InvolvedFunction Async function which can be invoked to execute all the intermediaries passed
      * along with the target function.
      */
-    static series(intermediaries, target, context){
+    static series(ints, target, context){
         /**
          * Each intermediary can have stacks of multiple middleware and afterware.
          * This function sequentially executes middleware stacks of the intermediaries and then 
          * executes the target function and then executes the afterware stacks of the intermediaries.
          */
         return async (...targetArgs) => {
-            let lastIntermediary = [...intermediaries].pop();
+            let intermediaries = [...ints];
+            let lastIntermediary = intermediaries.pop();
             let next = lastIntermediary.involve(target, context).bind(lastIntermediary);
             intermediaries.reverse();
             for (const intermediary of intermediaries) {
