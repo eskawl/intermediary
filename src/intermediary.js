@@ -109,14 +109,17 @@ class Intermediary {
          * executes the target function and then executes the afterware stacks of the intermediaries.
          */
         return async (...targetArgs) => {
+            let valid = ints.every((int) => {
+                return int instanceof Intermediary
+            });
+            if(!valid){
+                throw new Error('intermediaries should be instances of Intermediary')
+            }
             let intermediaries = [...ints];
             let lastIntermediary = intermediaries.pop();
             let next = lastIntermediary.involve(target, context).bind(lastIntermediary);
             intermediaries.reverse();
             for (const intermediary of intermediaries) {
-                if(!(intermediary instanceof Intermediary)){
-                    throw new Error('intermediaries should be instances of Intermediary')
-                } 
                 next = intermediary.involve(next, context).bind(intermediary)
             };
             return next(...targetArgs)
