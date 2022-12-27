@@ -3,7 +3,6 @@ const { resolve } = require("path");
 const babelConfig = require('./babel.config');
 
 module.exports = {
-  devtool: "none",
   mode: "production",
   entry: {
     index: [resolve(__dirname, "src/intermediary.js")]
