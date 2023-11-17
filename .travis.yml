@@ -1,9 +1,0 @@
-language: node_js
-node_js: 
-- lts/dubnium
-install:
-- npm install
-before_script:
-- npm test
-script:
-- npm run build
